@@ -2,6 +2,7 @@ const Koa = require('koa'),
     Router = require('koa-router'),
     shell = require('shelljs'),
     path = require('path'),
+    send = require('koa-send'),
     app = new Koa(),
     router = new Router()
 
@@ -33,35 +34,40 @@ router.get('/init', function(ctx, next) {
 });
 
 router.get('/update', function(ctx, next) {
+	  var fileHash;
     shell.cd('source/' + projectName)
     console.log("Now in source/" + projectName)
     console.log("Pulling code")
     shell.exec('git pull ' + gitRepo, () => {
         console.log("git pull successful")
         console.log("building")
-        shell.exec('npm run build', function(code, stdout, stderr) {
-            console.log('Exit code:', code)
-            console.log('Program output:', stdout)
-            console.log('Program stderr:', stderr)
-            console.log("building successful")
-            console.log("compressing")
-            shell.exec("tar -cvf bundle.tar ./static", function(code, stdout, stderr) {
-            	  shell.rm('-rf', '../../release/*')
-            	  shell.mv('bundle.tar', '../../release/')
+        shell.exec('git rev-parse HEAD', (code, stdout, stderr) => {
+        	  fileHash = stdout.slice(0,stdout.length-1) // remove \n
+            shell.exec('npm run build', function(code, stdout, stderr) {
                 console.log('Exit code:', code)
                 console.log('Program output:', stdout)
                 console.log('Program stderr:', stderr)
-                console.log("compressing successful")
-                console.log("all done")
+                console.log("building successful")
+                console.log("compressing")
+                shell.exec("tar -cvf " + fileHash + ".tar ./static", function(code, stdout, stderr) {
+                    shell.rm('-rf', '../../release/*')
+                    shell.mv(fileHash + '.tar', '../../release/')
+                    console.log('Exit code:', code)
+                    console.log('Program output:', stdout)
+                    console.log('Program stderr:', stderr)
+                    console.log("compressing successful")
+                    console.log("all done")
+                })
             })
         })
     })
     ctx.body = 'finished'
 });
 
-router.get('/getCode', function(ctx, next) {
-
-    ctx.body = 'finished'
+router.get('/getCode/:hash', async(ctx) => {
+    await send(ctx, ctx.params.hash+".tar", {
+        root: __dirname + '/release'
+    });
 });
 
 app

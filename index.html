@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>hello world</title>
+</head>
+
+<body>
+  <button id="btn">Start Building!!</button>
+  <ul id="progress">
+  	<h2>Progress</h2>
+  </ul>
+    <script src="/static/socket.io.js"></script>
+    <script>
+    function addMessage(text){
+    	var ul = document.querySelector("#progress");
+    	var li = document.createElement("li");
+    	li.innerHTML = (text);
+	    ul.appendChild(li)
+    }
+    var socket = io.connect('/');
+    var btn = document.querySelector("#btn");
+    btn.addEventListener("click", function(){
+    	socket.emit('update');
+    })
+    socket.on('message', function(data) {
+    	console.log(data)
+    	addMessage(data.content)
+        // data.message.forEach(function(){
+        // 	addMessage(text)
+        // })
+    });
+    </script>
+</body>
+
+</html>
